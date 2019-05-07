@@ -711,7 +711,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = W6L39UYL6Z;
+				DEVELOPMENT_TEAM = L4Y7P64253;
 				INFOPLIST_FILE = "Screenshot Framer/Supporting Files/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ideasoncanvas.ScreenshotFramer;
@@ -728,7 +728,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = W6L39UYL6Z;
+				DEVELOPMENT_TEAM = L4Y7P64253;
 				INFOPLIST_FILE = "Screenshot Framer/Supporting Files/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ideasoncanvas.ScreenshotFramer;

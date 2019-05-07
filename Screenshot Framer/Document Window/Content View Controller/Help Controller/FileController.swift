@@ -17,6 +17,11 @@ import Foundation
 final class FileCapsule {
 
     var projectURL: URL?
+
+    var rawScreenshotsURL: URL? {
+        return projectURL?.appendingPathComponent("raw", isDirectory: true)
+    }
+
 }
 
 

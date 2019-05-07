@@ -87,64 +87,92 @@ class LayoutController {
 
 private extension LayoutController {
 
-    func textField(from object: LayoutableObject) -> NSTextField {
+    func textField(from object: LayoutableObject) -> NSTextView {
         let viewState = self.viewStateController.viewState
         let absoluteURL = self.fileController.absoluteURL(for: object, viewState: viewState)
         let text = self.fileController.localizedTitle(from: absoluteURL, viewState: viewState)
 
-        let textField = NSTextField(frame: object.frame)
-        textField.textColor = NSColor.white
-        textField.backgroundColor = NSColor.clear
-        textField.isBezeled = false
-        textField.isEditable = false
-        textField.alignment = .center
+        let textView = NSTextView(frame: object.frame)
+        textView.textColor = NSColor.white
+        textView.backgroundColor = NSColor.clear
+        textView.isEditable = false
+        textView.alignment = .center
+        textView.textContainer?.lineBreakMode = .byTruncatingTail
+        textView.maxSize = object.frame.size
 
         if let text = text {
-            textField.stringValue = text
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineSpacing = 0
+            paragraphStyle.lineHeightMultiple = 0.8
+            paragraphStyle.alignment = .center
+            let attributes: [NSAttributedString.Key: Any] = [
+                .paragraphStyle: paragraphStyle,
+                .foregroundColor: object.color ?? .white
+            ]
+            let attributedText = NSAttributedString(string: text, attributes: attributes)
+            textView.textStorage?.setAttributedString(attributedText)
         } else {
-            textField.backgroundColor = NSColor.red
+            textView.backgroundColor = NSColor.red
         }
 
-        textField.font = self.font(for: object)
+        textView.font = self.font(for: object)
 
-        if let color = object.color {
-            textField.textColor = color
-        }
-
-        if self.limitFontSize(for: textField) {
+        if !self.fitText(for: textView) {
             self.layoutErrors.append(.fontToBig)
         }
 
-        return textField
+        return textView
     }
 
-    @discardableResult
-    func limitFontSize(for textField: NSTextField) -> Bool {
-        guard let font = textField.font else { return false }
-        guard let fontSizeObject = font.fontDescriptor.object(forKey: NSFontDescriptor.AttributeName.size) as? NSNumber else { return false }
+    func fitText(for textView: NSTextView) -> Bool {
+        guard let layoutManager = textView.layoutManager, let textContainer = textView.textContainer, let textStorage = textView.textStorage else { return true }
 
-        var fontSize = CGFloat(fontSizeObject.floatValue)
+        layoutManager.ensureLayout(for: textContainer)
+
         let kMinFontSize = CGFloat(6.0)
-        let frame = textField.frame
-        let string = textField.stringValue as NSString
-        var limited = false
+        let viewSize = textView.bounds.size
 
-        func calculateStringSize(withFont font: NSFont) -> CGSize {
-            textField.font = font
-            return textField.sizeThatFits(CGSize(width: frame.width, height: CGFloat.greatestFiniteMagnitude))
-        }
-
-        var size = calculateStringSize(withFont: NSFont(name: font.fontName, size: fontSize)!)
-        while (size.width >= frame.width || size.height >= frame.height) && fontSize > kMinFontSize {
-            limited = true
+        let font = textView.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        var fontSize = font.pointSize
+        var textSize = layoutManager.usedRect(for: textContainer).size
+        while !viewSize.contains(textSize) && fontSize > kMinFontSize {
             fontSize -= 0.5
-            let newFontSize = CGFloat(fontSize)
-            guard let newFont = NSFont(name: font.fontName, size: newFontSize) else { return limited }
-
-            size = calculateStringSize(withFont: newFont)
+            guard let newFont = NSFont(name: font.fontName, size: fontSize) else { return false }
+            textStorage.font = newFont
+            layoutManager.ensureLayout(for: textContainer)
+            textSize = layoutManager.usedRect(for: textContainer).size
         }
-        return limited
+
+        return viewSize.contains(textSize)
     }
+
+//    @discardableResult
+//    func limitFontSize(for textField: NSTextView) -> Bool {
+//        guard let font = textField.font else { return false }
+//        guard let fontSizeObject = font.fontDescriptor.object(forKey: NSFontDescriptor.AttributeName.size) as? NSNumber else { return false }
+//
+//        var fontSize = CGFloat(fontSizeObject.floatValue)
+//        let kMinFontSize = CGFloat(6.0)
+//        let frame = textField.frame
+//        let string = textField.textStorage?.string as NSString
+//        var limited = false
+//
+//        func calculateStringSize(withFont font: NSFont) -> CGSize {
+//            textField.font = font
+//            return textField.sizeThatFits(CGSize(width: frame.width, height: CGFloat.greatestFiniteMagnitude))
+//        }
+//
+//        var size = calculateStringSize(withFont: NSFont(name: font.fontName, size: fontSize)!)
+//        while (size.width >= frame.width || size.height >= frame.height) && fontSize > kMinFontSize {
+//            limited = true
+//            fontSize -= 0.5
+//            let newFontSize = CGFloat(fontSize)
+//            guard let newFont = NSFont(name: font.fontName, size: newFontSize) else { return limited }
+//
+//            size = calculateStringSize(withFont: newFont)
+//        }
+//        return limited
+//    }
 
     func view(from object: LayoutableObject) -> NSView {
         let viewState = self.viewStateController.viewState
@@ -177,5 +205,11 @@ private extension LayoutController {
 
         let font = NSFont(name: fontName!, size: object.fontSize ?? 25)
         return font
+    }
+}
+
+extension CGSize {
+    func contains(_ other: CGSize) -> Bool {
+        return (other.width <= width) && (other.height <= height)
     }
 }
