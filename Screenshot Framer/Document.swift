@@ -16,6 +16,7 @@ final class Document: NSDocument {
     let fileCapsule = FileCapsule()
     private(set) var layerStateHistory = LayerStateHistory()
     private var projectURL: URL? { return self.fileURL?.deletingLastPathComponent() }
+    private var projectBaseName: String? { return self.fileURL?.lastPathComponent.replacingOccurrences(of: ".frame", with: "") }
     lazy var timeTravelWindowController = TimeTravelWindowController(layerStateHistory: self.layerStateHistory)
 
 
@@ -72,6 +73,7 @@ final class Document: NSDocument {
         switch didSave {
         case true:
             self.fileCapsule.projectURL = self.projectURL
+            self.fileCapsule.projectBaseName = self.projectBaseName
         case false:
             self.close()
         }
@@ -124,6 +126,7 @@ final class Document: NSDocument {
 
     override func read(from data: Data, ofType typeName: String) throws {
         self.fileCapsule.projectURL = self.projectURL
+        self.fileCapsule.projectBaseName = self.projectBaseName
 
         let decoder = JSONDecoder()
         let layers = try decoder.decode([LayerState].self, from: data)

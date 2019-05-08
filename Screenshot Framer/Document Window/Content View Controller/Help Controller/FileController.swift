@@ -17,6 +17,7 @@ import Foundation
 final class FileCapsule {
 
     var projectURL: URL?
+    var projectBaseName: String?
 
     var rawScreenshotsURL: URL? {
         return projectURL?.appendingPathComponent("raw", isDirectory: true)
@@ -41,14 +42,33 @@ final class FileController {
 
     // MARK: - Functions
 
-    func absoluteURL(for object: LayoutableObject, viewState: ViewState) -> URL? {
-        guard object.file.hasElements else { return nil }
+    func absoluteURL(for relativePath: String, viewState: ViewState) -> URL? {
+        guard relativePath.hasElements else { return nil }
 
-        var file = object.file.replacingOccurrences(of: "$image", with: "\(viewState.imageNumber)")
-        file = file.replacingOccurrences(of: "$language", with: viewState.language)
+        func extractURL(from language: String = "", with specialization: String? = nil) -> URL? {
+            var file = relativePath.replacingOccurrences(of: "$image", with: "\(viewState.imageNumber)")
+            file = file.replacingOccurrences(of: "$language", with: language).replacingOccurrences(of: "//", with: "/")
+            guard var result = self.fileCapsule.projectURL?.appendingPathComponent(file) else { return nil }
+            if let specialization = specialization {
+                let ext = result.pathExtension
+                let fileName = result.lastPathComponent.replacingOccurrences(of: ".\(ext)", with: "-\(specialization).\(ext)")
+                result.deleteLastPathComponent()
+                result.appendPathComponent(fileName)
+            }
+            return result
+        }
 
-        let absoluteURL = self.fileCapsule.projectURL?.appendingPathComponent(file)
-        return absoluteURL
+        let projectName = fileCapsule.projectBaseName
+        if let url = extractURL(from: viewState.language, with: projectName), url.fileExists {
+            return url
+        }
+        if let url = extractURL(from: viewState.language), url.fileExists {
+            return url
+        }
+        if let url = extractURL(with: projectName), url.fileExists {
+            return url
+        }
+        return extractURL()
     }
 
     func localizedTitle(from url: URL?, viewState: ViewState) -> String? {
@@ -65,5 +85,11 @@ final class FileController {
         file = file.replacingOccurrences(of: "$language", with: viewState.language)
 
         return base.appendingPathComponent(file)
+    }
+}
+
+extension URL {
+    var fileExists: Bool {
+        return self.isFileURL && FileManager.default.fileExists(atPath: self.path)
     }
 }

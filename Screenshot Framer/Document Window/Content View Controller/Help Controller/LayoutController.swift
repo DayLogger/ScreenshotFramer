@@ -89,37 +89,38 @@ private extension LayoutController {
 
     func textField(from object: LayoutableObject) -> NSTextView {
         let viewState = self.viewStateController.viewState
-        let absoluteURL = self.fileController.absoluteURL(for: object, viewState: viewState)
+        let absoluteURL = self.fileController.absoluteURL(for: object.file, viewState: viewState)
         let text = self.fileController.localizedTitle(from: absoluteURL, viewState: viewState)
 
         let textView = NSTextView(frame: object.frame)
-        textView.textColor = NSColor.white
+//        textView.textColor = NSColor.white
         textView.backgroundColor = NSColor.clear
         textView.isEditable = false
-        textView.alignment = .center
+//        textView.alignment = .center
         textView.textContainer?.lineBreakMode = .byTruncatingTail
         textView.maxSize = object.frame.size
 
         if let text = text {
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.lineSpacing = 0
-            paragraphStyle.lineHeightMultiple = 0.8
-            paragraphStyle.alignment = .center
-            let attributes: [NSAttributedString.Key: Any] = [
-                .paragraphStyle: paragraphStyle,
-                .foregroundColor: object.color ?? .white
-            ]
-            let attributedText = NSAttributedString(string: text, attributes: attributes)
-            textView.textStorage?.setAttributedString(attributedText)
+            let cssFile = object.file.replacingOccurrences(of: ".strings", with: ".css")
+            let cssURL = self.fileController.absoluteURL(for: cssFile, viewState: viewState)
+            if let cssURL = cssURL, let cssData = try? Data(contentsOf: cssURL) {
+                let cssText = String(data: cssData, encoding: .utf8)!
+                let htmlText = "<html><head><style>\(cssText)</style></head><body>\(text)</body></html>"
+                let htmlData = htmlText.data(using: .utf16)!
+                let attributedText = NSAttributedString(html: htmlData, documentAttributes: nil)!
+                textView.textStorage?.setAttributedString(attributedText)
+            } else {
+                textView.textStorage?.setAttributedString(NSAttributedString(string: text))
+            }
         } else {
             textView.backgroundColor = NSColor.red
         }
 
-        textView.font = self.font(for: object)
+//        textView.font = self.font(for: object)
 
-        if !self.fitText(for: textView) {
-            self.layoutErrors.append(.fontToBig)
-        }
+//        if !self.fitText(for: textView) {
+//            self.layoutErrors.append(.fontToBig)
+//        }
 
         return textView
     }
@@ -176,7 +177,7 @@ private extension LayoutController {
 
     func view(from object: LayoutableObject) -> NSView {
         let viewState = self.viewStateController.viewState
-        if let url = self.fileController.absoluteURL(for: object, viewState: viewState) {
+        if let url = self.fileController.absoluteURL(for: object.file, viewState: viewState) {
             let imageView = NSImageView(frame: object.frame)
             imageView.image = NSImage(contentsOf: url)
             imageView.imageScaling = .scaleAxesIndependently
